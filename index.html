@@ -1,0 +1,263 @@
+<title>Coffee Monitor</title>
+<style>
+    body {
+        background-color: rgb(46, 46, 46);
+        margin: 0;
+        font-family: monospace;
+        color: white;
+        font-size: 1vw;
+    }
+
+    .topBar {
+        background-color: rgb(21, 21, 21);
+        overflow: hidden;
+        height: fit-content;
+        padding: 1vw;
+        font-size: 2vw;
+
+    }
+
+    .subText{
+        font-size:1vw;
+        padding: 0.1vw;
+    }
+
+    .infoBox {
+        position:absolute;
+        left: 26vw;
+        right: 26vw;
+        max-width: 48vw;
+        background-color: rgb(33, 33, 33);
+        padding: 0.5vw;
+        border-radius: 0.5vw;
+        height: 20vw;
+        top: 15vw;
+    }
+
+    .column {
+        float: left;
+        width: 25%;
+        height: 25%;
+    }
+
+    .graphColumn {
+        float:left;
+        width: 50%;
+        height: 75%;
+    }
+
+    .link {
+        color:rgb(255, 95, 95);
+        text-decoration: none;
+        position:absolute;
+        left: 26vw;
+        top: 37vw;
+    }
+
+    .graph {
+        background-color:black; 
+        height:100%; 
+        width: calc(100% - 0.25vw);
+        border-radius: 0.5vw;
+        background-color: rgb(21, 21, 21);
+        image-rendering: pixelated;
+    }
+
+    .OfflineStatusDot, .OffStatusDot { 
+        height: 0.6vw; 
+        width: 0.6vw; 
+        background-color: #ff7373;
+        border-radius: 40%; 
+        display: inline-block; 
+    } 
+
+    .OnlineStatusDot, .OnStatusDot { 
+        height: 0.6vw; 
+        width: 0.6vw; 
+        background-color: #35c441;
+        border-radius: 40%; 
+        display: inline-block; 
+    } 
+
+
+</style>
+<html>
+    <div class="topBar">
+        CoffeeMonitor
+        <br>
+        <span class="subText"><a href="https://jbwx.github.io" target="_self" style="text-decoration: none; color:white;">jbwx.github.io</a></span>
+    </div>
+    <div class="infoBox">
+            <span id="params">
+            <div class="column">
+                Connection status: 
+                <br>
+                Ping:
+                <br>
+                Last turned on:
+            </div>
+            <div class="column">
+                <span class="OffStatusDot"></span> Offline
+                <br>
+                ...
+                <br>
+                ...
+            </div>
+            <div class="column">
+                Status: 
+                <br>
+                Temperature:
+                <br>
+                Alert status:
+            </div>
+            <div class="column">
+                ...
+                <br>
+                ...
+                <br>
+                ...
+            </div>
+            </span>
+            <div class="graphColumn">
+                <canvas class="graph" id="pingGraph" width="300" height="192" style="float:left"></canvas>
+            </div>
+            <div class="graphColumn">
+                <canvas class="graph" id="temperatureGraph" width="300" height="192" style="float:right"></canvas>
+            </div>
+    </div>
+    <div class="column">
+    <a class="link" href="https://github.com/jbwx/CoffeeHelper" target="_self">Repository</a>
+        <br>
+        <a class="link" href="https://jbwx.github.io" target="_self" style="top:38.5vw;">Home</a>
+    </div>
+</html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.js" type="text/javascript"></script>
+<script>
+// Status variables
+let connectionStatus = "Offline";
+let ping = 0;
+let lastTurnedOn = 0;
+let status = 0;
+let temperature = 0;
+let alertStatus = "Non-critical";
+
+// tracking variables
+let alerted = false;
+
+// ping graph configuration
+let ping_canvas = document.getElementById("pingGraph");
+let ping_ctx = ping_canvas.getContext("2d");
+ping_ctx.fillStyle = "#ff7373";
+
+// temperature graph configuration
+let temperature_canvas = document.getElementById("temperatureGraph");
+let temperature_ctx = temperature_canvas.getContext("2d");
+temperature_ctx.fillStyle = "#35c441";
+
+
+
+let graphIndex = 0; // Goes from 0-300 (5 minutes * 60 seconds * 1 message per second)
+
+// MQTT configuration
+client = new Paho.Client(host = 'mqtt.eclipseprojects.io', port = 80, 
+clientId = 'clientjs');
+client.onMessageArrived = onMessageArrived;
+var options = {
+useSSL: false,
+keepAliveInterval: 60,
+onSuccess: onConnect,
+};
+client.connect(options);
+
+function onConnect() {
+    console.log("Connected!");
+    connectionStatus = "Online";
+    client.subscribe("jbw23/coffeemonitor");
+}
+
+
+function onMessageArrived(message) {
+    let msg = message.payloadString;
+    console.log(msg);
+    parseMessage(msg);
+    updatePingGraph();
+    updateTemperatureGraph();
+    updateHTML();
+}
+
+function updatePingGraph(){
+    ping_ctx.fillRect(graphIndex, (192-Math.round((ping/200)*192)), 1, (Math.round((ping/200)*192)));
+    graphIndex++;
+    if(graphIndex == 300){
+        graphIndex = 0; // reset index
+        ping_ctx.clearRect(0, 0, ping_canvas.width, ping_canvas.height); // clear ping graph
+        temperature_ctx.clearRect(0, 0, ping_canvas.width, ping_canvas.height); // clear temperature graph
+        alerted = false; // re-alert every 5 minutes if not turned off
+    }
+}
+
+function updateTemperatureGraph(){
+    temperature_ctx.fillRect(graphIndex, (192-Math.round((temperature/95)*192)), 1, (Math.round((temperature/95)*192)));
+}
+
+function parseMessage(str){
+    temperature = Math.round(((parseInt(str.substring(17,19))*(9/5))+35)); // take it from the message string, and convert it to fahrenheit
+
+    ping = Math.abs((Date.now()) - parseInt(str.substring(20, 33))); // subtract times to get ping
+
+    //lastTurnedOn = Math.round(((Date.now() - parseInt(str.substring(36, 50)))/1000)/60); // get time last turned on from message string, convert it to seconds (/1000) and convert it to minutes (/1000)
+    lastTurnedOn = 30;
+    if(str.charAt(34) == "0"){
+        status = "Off";
+    } else {
+        status = "On";
+    }
+
+    // if(str.charAt(50) == "0"){
+    //     alertStatus = "Normal";
+    // } else {
+    //     alertStatus = "Critical";
+    // }
+
+    if(alertStatus == "Critical" && alerted == false){
+        alert("Holy guacamole! You left the coffee maker on!");
+        alerted = true;
+    }
+
+}
+
+function updateHTML(){
+    document.getElementById("params").innerHTML = `
+    <span class = "params">
+            <div class="column">
+                Connection status:
+                <br>
+                Ping:
+                <br>
+                Last turned on:
+            </div>
+            <div class="column">
+                <span class="` + connectionStatus + `StatusDot"></span> ` + connectionStatus + `
+                <br>
+                ` + ping + `ms
+                <br>
+                ` + lastTurnedOn + `m ago
+            </div>
+            <div class="column">
+                Status: 
+                <br>
+                Temperature:
+                <br>
+                Alert status:
+            </div>
+            <div class="column">
+                <span class="` + status + `StatusDot"></span> ` + status + `
+                <br>
+                ` + temperature + `°F
+                <br>
+                ` + alertStatus + `
+            </div>
+            `
+}
+
+</script>

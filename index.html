@@ -159,7 +159,7 @@ temperature_ctx.fillStyle = "#35c441";
 let graphIndex = 0; // Goes from 0-300 (5 minutes * 60 seconds * 1 message per second)
 
 // MQTT configuration
-client = new Paho.Client(host = 'mqtt.eclipseprojects.io', port = 8883, 
+client = new Paho.Client(host = 'mqtt.eclipseprojects.io', port = 443, 
 clientId = 'clientjs');
 client.onMessageArrived = onMessageArrived;
 var options = {

@@ -16,8 +16,11 @@ import RPi.GPIO as GPIO
 
 # MQTT configuration
 BROKER = 'mqtt.eclipseprojects.io'          # broker
-PORT = 1883                                 # port
+PORT = 8883                                 # port
 TOPIC = 'jbw23/coffeemonitor'               # topic
+CERTS = '/etc/ssl/certs/ca-certificates.crt'# certicfication
+USERNAME = 'jbw23'                          # username
+PASSWORD = 'coffeemonitor'                  # password
 
 # Temperature sensor configuration
 BUS = 1                                     # I2C bus number
@@ -76,6 +79,8 @@ def alarm():
 
 try:
     client = mqtt.Client()
+    client.username_pw_set(USERNAME, password=PASSWORD)
+    client.tls_set(CERTS)
     client.connect(BROKER, PORT, 60)                        # attempt connection
     while (True):                                           # run indefinitely
         time.sleep(1)                                       # run this loop every second

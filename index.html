@@ -163,9 +163,11 @@ client = new Paho.Client(host = 'mqtt.eclipseprojects.io', port = 80,
 clientId = 'clientjs');
 client.onMessageArrived = onMessageArrived;
 var options = {
-useSSL: false,
-keepAliveInterval: 60,
-onSuccess: onConnect,
+    useSSL: false,
+    keepAliveInterval: 60,
+    onSuccess: onConnect,
+    userName: 'jbw23',
+    password: 'coffeemonitor'
 };
 client.connect(options);
 

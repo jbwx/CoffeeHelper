@@ -207,19 +207,18 @@ function parseMessage(str){
 
     ping = Math.abs((Date.now()) - parseInt(str.substring(20, 33))); // subtract times to get ping
 
-    //lastTurnedOn = Math.round(((Date.now() - parseInt(str.substring(36, 50)))/1000)/60); // get time last turned on from message string, convert it to seconds (/1000) and convert it to minutes (/1000)
-    lastTurnedOn = 30;
+    lastTurnedOn = Math.round(((Date.now() - parseInt(str.substring(36, 50)))/1000)/60); // get time last turned on from message string, convert it to seconds (/1000) and convert it to minutes (/1000)
     if(str.charAt(34) == "0"){
         status = "Off";
     } else {
         status = "On";
     }
 
-    // if(str.charAt(50) == "0"){
-    //     alertStatus = "Normal";
-    // } else {
-    //     alertStatus = "Critical";
-    // }
+    if(str.charAt(50) == "0"){
+        alertStatus = "Normal";
+    } else {
+        alertStatus = "Critical";
+    }
 
     if(alertStatus == "Critical" && alerted == false){
         alert("Holy guacamole! You left the coffee maker on!");

@@ -14,7 +14,6 @@
         height: fit-content;
         padding: 1vw;
         font-size: 2vw;
-
     }
 
     .subText{
@@ -89,34 +88,34 @@
     </div>
     <div class="infoBox">
             <span id="params">
-            <div class="column">
-                Connection status: 
-                <br>
-                Ping:
-                <br>
-                Last turned on:
-            </div>
-            <div class="column">
-                <span class="OffStatusDot"></span> Offline
-                <br>
-                ...
-                <br>
-                ...
-            </div>
-            <div class="column">
-                Status: 
-                <br>
-                Temperature:
-                <br>
-                Alert status:
-            </div>
-            <div class="column">
-                ...
-                <br>
-                ...
-                <br>
-                ...
-            </div>
+                <div class="column">
+                    Connection status: 
+                    <br>
+                    Ping:
+                    <br>
+                    Last turned on:
+                </div>
+                <div class="column">
+                    <span class="OffStatusDot"></span> Offline
+                    <br>
+                    ...
+                    <br>
+                    ...
+                </div>
+                <div class="column">
+                    Status: 
+                    <br>
+                    Temperature:
+                    <br>
+                    Alert status:
+                </div>
+                <div class="column">
+                    ...
+                    <br>
+                    ...
+                    <br>
+                    ...
+                </div>
             </span>
             <div class="graphColumn">
                 <canvas class="graph" id="pingGraph" width="300" height="192" style="float:left"></canvas>
@@ -131,66 +130,68 @@
         <a class="link" href="https://jbwx.github.io" target="_self" style="top:38.5vw;">Home</a>
     </div>
 </html>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.js" type="text/javascript"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.js" type="text/javascript"></script> -->
+<script src="paho.js" type="text/javascript"></script> 
 <script>
 // Status variables
-let connectionStatus = "Offline";
-let ping = 0;
-let lastTurnedOn = 0;
-let status = 0;
-let temperature = 0;
-let alertStatus = "Non-critical";
-
-// tracking variables
-let alerted = false;
+let connectionStatus = "Offline";   // only updates to "online" when MQTT packets received
+let ping = 0;                       // measures the overhead time from when the packet was sent vs. when it was received
+let lastTurnedOn = 0;               // tracks when the temperature last exceeded 30ºc (86ºf)
+let status = 0;                     // tracks if the coffee maker is on or off
+let temperature = 0;                // tracks the temperature of the coffee maker
+let alertStatus = "Non-critical";   // tracks if the coffee maker has been on for over 30 minutes
+let alerted = false;                // necessary for making sure alerts aren't spammed
 
 // ping graph configuration
 let ping_canvas = document.getElementById("pingGraph");
 let ping_ctx = ping_canvas.getContext("2d");
+let pingMax = 200;
 ping_ctx.fillStyle = "#ff7373";
 
 // temperature graph configuration
 let temperature_canvas = document.getElementById("temperatureGraph");
 let temperature_ctx = temperature_canvas.getContext("2d");
+let tempMax = 95;
 temperature_ctx.fillStyle = "#35c441";
 
 
-
+// general graph configuration
 let graphIndex = 0; // Goes from 0-300 (5 minutes * 60 seconds * 1 message per second)
+graphHeight = 192;
 
 // MQTT configuration
 client = new Paho.Client(host = 'mqtt.eclipseprojects.io', port = 443, 
 clientId = 'clientjs');
 client.onMessageArrived = onMessageArrived;
-var options = {
+var options = { // connection configuration
     useSSL: false,
     keepAliveInterval: 60,
-    onSuccess: onConnect,
+    onSuccess: onConnect, // see function below
     userName: 'jbw23',
     password: 'coffeemonitor'
 };
-client.connect(options);
+client.connect(options); // connect with these parameters
 
 function onConnect() {
-    console.log("Connected!");
+    console.log("Connected");
     connectionStatus = "Online";
-    client.subscribe("jbw23/coffeemonitor");
+    client.subscribe("jbw23/coffeemonitor"); // subscribe to the coffeemonitor topic
 }
-
 
 function onMessageArrived(message) {
     let msg = message.payloadString;
-    console.log(msg);
-    parseMessage(msg);
-    updatePingGraph();
-    updateTemperatureGraph();
-    updateHTML();
+    console.log(msg);           // log the message (for debug purposes)
+    parseMessage(msg);          // update the variables using the message string
+    updatePingGraph();          // add this data-point to the ping graph
+    updateTemperatureGraph();   // add this data-point to the temperature graph
+    updateHTML();               // update the webpage HTML
 }
 
+// draw the next datapoint on the ping graph, and do some general graph-management stuff
 function updatePingGraph(){
-    ping_ctx.fillRect(graphIndex, (192-Math.round((ping/200)*192)), 1, (Math.round((ping/200)*192)));
-    graphIndex++;
-    if(graphIndex == 300){
+    ping_ctx.fillRect(graphIndex, (graphHeight-Math.round((ping/pingMax)*graphHeight)), 1, (Math.round((ping/pingMax)*graphHeight))); // fill that slice of the graph according to the data
+    graphIndex++; // increment where the next point will be graphed
+    if(graphIndex == 300){ // if edge of the graph has been reached...
         graphIndex = 0; // reset index
         ping_ctx.clearRect(0, 0, ping_canvas.width, ping_canvas.height); // clear ping graph
         temperature_ctx.clearRect(0, 0, ping_canvas.width, ping_canvas.height); // clear temperature graph
@@ -198,35 +199,39 @@ function updatePingGraph(){
     }
 }
 
+// draw the next datapoint on the temperature graph
 function updateTemperatureGraph(){
-    temperature_ctx.fillRect(graphIndex, (192-Math.round((temperature/95)*192)), 1, (Math.round((temperature/95)*192)));
+    temperature_ctx.fillRect(graphIndex, (graphHeight-Math.round((temperature/tempMax)*graphHeight)), 1, (Math.round((temperature/tempMax)*graphHeight))); // fill that slice of the graph according to the data
 }
 
+// takes an input (message received via MQTT), breaks it up into substrings, and updates the variables accordingly
 function parseMessage(str){
     temperature = Math.round(((parseInt(str.substring(17,19))*(9/5))+35)); // take it from the message string, and convert it to fahrenheit
-
     ping = Math.abs((Date.now()) - parseInt(str.substring(20, 33))); // subtract times to get ping
-
     lastTurnedOn = Math.round(((Date.now() - parseInt(str.substring(36, 50)))/1000)/60); // get time last turned on from message string, convert it to seconds (/1000) and convert it to minutes (/1000)
-    if(str.charAt(34) == "0"){
+    
+    if(str.charAt(34) == "0"){ // change status depending on whether a particular character in the message is "0" or "1"
         status = "Off";
     } else {
         status = "On";
     }
 
-    if(str.charAt(50) == "0"){
+    if(str.charAt(50) == "0"){ // change alertStatus depending on whether a particular character in the message is "0" or "1"
         alertStatus = "Normal";
     } else {
         alertStatus = "Critical";
     }
 
-    if(alertStatus == "Critical" && alerted == false){
+    if(alertStatus == "Critical" && alerted == false){ // if the user has not yet been alerted, alert them
         alert("Holy guacamole! You left the coffee maker on!");
         alerted = true;
     }
 
 }
 
+// Update the webpage display
+// Chrome got mad when I tried to do multiple DOM object grabs, so I was only limited to one.
+// My apologies if it looks awful. It works
 function updateHTML(){
     document.getElementById("params").innerHTML = `
     <span class = "params">
@@ -260,5 +265,4 @@ function updateHTML(){
             </div>
             `
 }
-
 </script>

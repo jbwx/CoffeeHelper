@@ -35,7 +35,7 @@ GPIO.setup(buzzer,GPIO.OUT)                 # setup buzzer
 
 # Coffee maker configuration
 last_turned_on = round(time.time()*1000)    # get time, convert to milliseconds
-on = 0                                      # tracks if the coffee maker is on (temp > 25ºc)
+on = 0                                      # tracks if the coffee maker is on (temp > 30ºc)
 alert_status = 0                            # tracks if the coffee maker has been on for >30 minutes
 alerted = 0                                 # tracks if the alarm has already been sounded, so it's not constantly going off
 temp_calibration = 10                       # temperature readings were always off by approximately this amount
@@ -51,11 +51,11 @@ def update_status():
     global on
     global alert_status
     global alerted
-    if temp > 25 and on == 0: # if temp is greater than 25ºc (77ºf), consider it on
+    if temp > 30 and on == 0: # if temp is greater than 30ºc (86ºf), consider it on
         on = 1
         last_turned_on = get_epoch_time()
 
-    if temp < 25 and on == 1: # if below the threshold, consider it off
+    if temp < 30 and on == 1: # if below the threshold, consider it off
         on = 0
 
     alert_time = (30 * 60 * 1000) # 1000 milleseconds, 60 seconds, 30 minutes

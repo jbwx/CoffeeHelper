@@ -143,3 +143,49 @@ except KeyboardInterrupt:                                   # when program termi
 # - Bye!
 # Barry, I told you,
 # stop flying in the house!
+
+# - Hey, Adam.
+# - Hey, Barry.
+# - Is that fuzz gel?
+# - A little. Special day, graduation.
+# Never thought I'd make it.
+# Three days grade school,
+# three days high school.
+# Those were awkward.
+# Three days college. I'm glad I took
+# a day and hitchhiked around the hive.
+# You did come back different.
+# - Hi, Barry.
+# - Artie, growing a mustache? Looks good.
+# - Hear about Frankie?
+# - Yeah.
+# - You going to the funeral?
+# - No, I'm not going.
+# Everybody knows,
+# sting someone, you die.
+# Don't waste it on a squirrel.
+# Such a hothead.
+# I guess he could have
+# just gotten out of the way.
+# I love this incorporating
+# an amusement park into our day.
+# That's why we don't need vacations.
+# Boy, quite a bit of pomp...
+# under the circumstances.
+# - Well, Adam, today we are men.
+# - We are!
+# - Bee-men.
+# - Amen!
+# Hallelujah!
+# Students, faculty, distinguished bees,
+# please welcome Dean Buzzwell.
+# Welcome, New Hive Oity
+# graduating class of...
+# ...9:15.
+# That concludes our ceremonies.
+# And begins your career
+# at Honex Industries!
+# Will we pick ourjob today?
+# I heard it's just orientation.
+# Heads up! Here we go.
+
